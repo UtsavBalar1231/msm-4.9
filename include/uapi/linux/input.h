@@ -166,6 +166,14 @@ struct input_mask {
 #define EVIOCGRAB		_IOW('E', 0x90, int)			/* Grab/Release device */
 #define EVIOCREVOKE		_IOW('E', 0x91, int)			/* Revoke device access */
 
+
+/*
+ * Synchronization events.
+ */
+
+#define SYN_TIME_SEC		4
+#define SYN_TIME_NSEC		5
+
 /**
  * EVIOCGMASK - Retrieve current event mask
  *
