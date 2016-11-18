@@ -1049,8 +1049,7 @@ static int qpnp_flash_led_module_disable(struct qpnp_flash_led *led,
 							&psy_prop);
 			if (rc) {
 				dev_err(&led->pdev->dev,
-				"Failed to setup OTG pulse skip enable\n");
-				return -EINVAL;
+				"Failed to disable OTG pulse skip\n");
 			}
 		}
 	}
@@ -1526,8 +1525,7 @@ static void qpnp_flash_led_work(struct work_struct *work)
 								&psy_prop);
 		if (rc) {
 			dev_err(&led->pdev->dev,
-				"Failed to setup OTG pulse skip enable\n");
-			goto exit_flash_led_work;
+				"Failed to setup OTG pulse skip\n");
 		}
 
 		if (led->pdata->power_detect_en ||
