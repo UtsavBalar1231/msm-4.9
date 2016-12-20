@@ -1264,6 +1264,67 @@ static int qpnp_flash_led_prepare_v1(struct led_trigger *trig, int options,
 	return 0;
 }
 
+
+static int qpnp_check_fault(struct qpnp_flash_led *led)
+{
+	int rc;
+	u8 val;
+
+	if (!led->pdata->self_check_en)
+		return false;
+
+	/*
+	 * Checking LED fault status detects hardware open fault.
+	 */
+	rc = spmi_ext_register_readl(led->spmi_dev->ctrl,
+		led->spmi_dev->sid,
+		FLASH_LED_FAULT_STATUS(led->base), &val, 1);
+	if (rc) {
+		dev_err(&led->spmi_dev->dev,
+			"Failed to read out fault status register\n");
+		return rc;
+	}
+
+	led->open_fault = (val & FLASH_LED_OPEN_FAULT_DETECTED);
+
+	if (led->open_fault) {
+		/* If a fault was detected;
+		   reset fault detection and check again to make
+		   sure fault is still active */
+		rc = qpnp_led_masked_write(led->spmi_dev,
+					FLASH_FAULT_DETECT(led->base),
+					FLASH_FAULT_DETECT_MASK,
+					FLASH_LED_DISABLE);
+		if (rc) {
+			dev_err(&led->spmi_dev->dev,
+				"Fault detect reg write failed\n");
+				return rc;
+		}
+		udelay(2000);
+		rc = qpnp_led_masked_write(led->spmi_dev,
+					FLASH_FAULT_DETECT(led->base),
+					FLASH_FAULT_DETECT_MASK,
+					FLASH_MODULE_ENABLE);
+		if (rc) {
+			dev_err(&led->spmi_dev->dev,
+				"Fault detect reg write failed\n");
+				return rc;
+		}
+		udelay(2000);
+		rc = spmi_ext_register_readl(led->spmi_dev->ctrl,
+			led->spmi_dev->sid,
+			FLASH_LED_FAULT_STATUS(led->base), &val, 1);
+		if (rc) {
+			dev_err(&led->spmi_dev->dev,
+				"Failed to read out fault status register\n");
+			return rc;
+		}
+		led->open_fault = (val & FLASH_LED_OPEN_FAULT_DETECTED);
+	}
+	return led->open_fault;
+}
+
+
 static void qpnp_flash_led_work(struct work_struct *work)
 {
 	struct flash_node_data *flash_node = container_of(work,
@@ -1282,7 +1343,7 @@ static void qpnp_flash_led_work(struct work_struct *work)
 	if (!brightness)
 		goto turn_off;
 
-	if (led->open_fault) {
+	if (qpnp_check_fault(led)) {
 		dev_err(&led->pdev->dev, "Open fault detected\n");
 		mutex_unlock(&led->flash_led_lock);
 		return;
@@ -1775,26 +1836,8 @@ static void qpnp_flash_led_work(struct work_struct *work)
 	return;
 
 turn_off:
-	if (led->flash_node[led->num_leds - 1].id == FLASH_LED_SWITCH &&
-					flash_node->id != FLASH_LED_SWITCH)
-		led->flash_node[led->num_leds - 1].trigger &=
-						~(0x80 >> flash_node->id);
-	if (flash_node->type == TORCH) {
-		/*
-		 * Checking LED fault status detects hardware open fault.
-		 * If fault occurs, all subsequent LED enablement requests
-		 * will be rejected to protect hardware.
-		 */
-		rc = regmap_read(led->regmap,
-			FLASH_LED_FAULT_STATUS(led->base), &temp);
-		if (rc) {
-			dev_err(&led->pdev->dev,
-				"Failed to read out fault status register\n");
-			goto exit_flash_led_work;
-		}
-
-		led->open_fault |= (val & FLASH_LED_OPEN_FAULT_DETECTED);
-	}
+	if (qpnp_check_fault(led))
+		dev_err(&led->spmi_dev->dev, "Open fault detected\n");
 
 	rc = qpnp_led_masked_write(led,
 			FLASH_LED_STROBE_CTRL(led->base),
