@@ -268,3 +268,11 @@ config MSM_SEC_CCI_DEBUG
 	---help---
 	  Enables simulation of secure camera for Secure CCI Realy
 	  debugging.
+
+config QPNP_FLASH_STROBE_OVERRIDE
+	bool "Enable sensor HW strobe override"
+	depends on LEDS_QPNP_FLASH
+	default n
+	---help---
+	    Enables support for flash HW strobe override
+	    based on sensor configuration.
