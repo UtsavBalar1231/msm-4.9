@@ -1,5 +1,5 @@
 /*****************************************************************************
-	Copyright(c) 2013 FCI Inc. All Rights Reserved
+	Copyright(c) 2017 FCI Inc. All Rights Reserved
 
 	File name : fci_hal.c
 
@@ -24,9 +24,8 @@
 *******************************************************************************/
 #include "fci_types.h"
 #include "fci_hal.h"
-#include "fc8300_spi.h"
-#include "fc8300_ppi.h"
-#include "fc8300_i2c.h"
+#include "fc8350_spi.h"
+#include "fc8350_i2c.h"
 
 struct IF_PORT {
 	s32 (*init)(HANDLE handle, u16 param1, u16 param2);
@@ -46,45 +45,31 @@ struct IF_PORT {
 };
 
 static struct IF_PORT spiif = {
-	&fc8300_spi_init,
-	&fc8300_spi_byteread,
-	&fc8300_spi_wordread,
-	&fc8300_spi_longread,
-	&fc8300_spi_bulkread,
-	&fc8300_spi_bytewrite,
-	&fc8300_spi_wordwrite,
-	&fc8300_spi_longwrite,
-	&fc8300_spi_bulkwrite,
-	&fc8300_spi_dataread,
-	&fc8300_spi_deinit
-};
-
-static struct IF_PORT ppiif = {
-	&fc8300_ppi_init,
-	&fc8300_ppi_byteread,
-	&fc8300_ppi_wordread,
-	&fc8300_ppi_longread,
-	&fc8300_ppi_bulkread,
-	&fc8300_ppi_bytewrite,
-	&fc8300_ppi_wordwrite,
-	&fc8300_ppi_longwrite,
-	&fc8300_ppi_bulkwrite,
-	&fc8300_ppi_dataread,
-	&fc8300_ppi_deinit
+	&fc8350_spi_init,
+	&fc8350_spi_byteread,
+	&fc8350_spi_wordread,
+	&fc8350_spi_longread,
+	&fc8350_spi_bulkread,
+	&fc8350_spi_bytewrite,
+	&fc8350_spi_wordwrite,
+	&fc8350_spi_longwrite,
+	&fc8350_spi_bulkwrite,
+	&fc8350_spi_dataread,
+	&fc8350_spi_deinit
 };
 
 static struct IF_PORT i2cif = {
-	&fc8300_i2c_init,
-	&fc8300_i2c_byteread,
-	&fc8300_i2c_wordread,
-	&fc8300_i2c_longread,
-	&fc8300_i2c_bulkread,
-	&fc8300_i2c_bytewrite,
-	&fc8300_i2c_wordwrite,
-	&fc8300_i2c_longwrite,
-	&fc8300_i2c_bulkwrite,
-	&fc8300_i2c_dataread,
-	&fc8300_i2c_deinit
+	&fc8350_i2c_init,
+	&fc8350_i2c_byteread,
+	&fc8350_i2c_wordread,
+	&fc8350_i2c_longread,
+	&fc8350_i2c_bulkread,
+	&fc8350_i2c_bytewrite,
+	&fc8350_i2c_wordwrite,
+	&fc8350_i2c_longwrite,
+	&fc8350_i2c_bulkwrite,
+	&fc8350_i2c_dataread,
+	&fc8350_i2c_deinit
 };
 
 static struct IF_PORT *ifport = &i2cif;
@@ -101,8 +86,7 @@ s32 bbm_hostif_select(HANDLE handle, u8 hostif)
 	case BBM_I2C:
 		ifport = &i2cif;
 		break;
-	case BBM_PPI:
-		ifport = &ppiif;
+	case BBM_SDIO:
 		break;
 	default:
 		return BBM_E_HOSTIF_SELECT;

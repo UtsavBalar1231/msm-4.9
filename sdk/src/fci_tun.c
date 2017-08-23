@@ -1,5 +1,5 @@
 /*****************************************************************************
-	Copyright(c) 2013 FCI Inc. All Rights Reserved
+	Copyright(c) 2017 FCI Inc. All Rights Reserved
 
 	File name : fci_tun.c
 
@@ -22,15 +22,17 @@
 	History :
 	----------------------------------------------------------------------
 *******************************************************************************/
+#include "fc8350.h"
 #include "fci_types.h"
-#include "fc8300_regs.h"
+#include "fc8350_regs.h"
 #include "fci_hal.h"
 #include "fci_tun.h"
 #include "fci_hpi.h"
-#include "fc8300_bb.h"
-#include "fc8300_tun.h"
+#include "fc8350_bb.h"
+#include "fc8350_tun.h"
 
-#define FC8300_TUNER_ADDR	0x58
+#define FC8350_TUNER_ADDR       0x58
+#define FC8350_TUNER_VER        0x77
 
 struct I2C_DRV {
 	int (*init)(HANDLE handle, DEVICEID devid,
@@ -42,13 +44,6 @@ struct I2C_DRV {
 	int (*deinit)(HANDLE handle, DEVICEID devid);
 };
 
-static struct I2C_DRV fcihpi = {
-	&fci_hpi_init,
-	&fci_hpi_read,
-	&fci_hpi_write,
-	&fci_hpi_deinit
-};
-
 struct TUNER_DRV {
 	int (*init)(HANDLE handle, DEVICEID devid,
 			enum BROADCAST_TYPE broadcast);
@@ -57,18 +52,25 @@ struct TUNER_DRV {
 	int (*deinit)(HANDLE handle, DEVICEID devid);
 };
 
-static struct TUNER_DRV fc8300_tuner = {
-	&fc8300_tuner_init,
-	&fc8300_set_freq,
-	&fc8300_get_rssi,
-	&fc8300_tuner_deinit
+static struct I2C_DRV fcihpi = {
+	&fci_hpi_init,
+	&fci_hpi_read,
+	&fci_hpi_write,
+	&fci_hpi_deinit
 };
 
-static u8 tuner_addr = FC8300_TUNER_ADDR;
+static struct TUNER_DRV fc8350_tuner = {
+	&fc8350_tuner_init,
+	&fc8350_set_freq,
+	&fc8350_get_rssi,
+	&fc8350_tuner_deinit
+};
+
+static u8 fc8350_tuner_addr = FC8350_TUNER_ADDR;
 static enum BROADCAST_TYPE broadcast_type = ISDBT_13SEG;
 static enum I2C_TYPE tuner_i2c = FCI_HPI_TYPE;
 static struct I2C_DRV *tuner_ctrl = &fcihpi;
-static struct TUNER_DRV *tuner = &fc8300_tuner;
+static struct TUNER_DRV *tuner = &fc8350_tuner;
 
 s32 tuner_ctrl_select(HANDLE handle, DEVICEID devid, enum I2C_TYPE type)
 {
@@ -106,7 +108,7 @@ s32 tuner_i2c_read(HANDLE handle, DEVICEID devid,
 		return BBM_E_TN_CTRL_SELECT;
 
 	if (tuner_ctrl->read(handle, devid,
-				tuner_addr, addr, alen, data, len))
+				fc8350_tuner_addr, addr, alen, data, len))
 		return BBM_E_TN_READ;
 
 	return BBM_OK;
@@ -119,7 +121,7 @@ s32 tuner_i2c_write(HANDLE handle, DEVICEID devid,
 		return BBM_E_TN_CTRL_SELECT;
 
 	if (tuner_ctrl->write(handle, devid,
-			tuner_addr, addr, alen, data, len))
+			fc8350_tuner_addr, addr, alen, data, len))
 		return BBM_E_TN_WRITE;
 
 	return BBM_OK;
@@ -141,36 +143,38 @@ s32 tuner_set_freq(HANDLE handle, DEVICEID devid, u32 freq, u8 subch)
 	}
 #endif
 
-	fc8300_set_core_clk(handle, devid, broadcast_type, freq);
+	if (tuner == &fc8350_tuner)
+		fc8350_set_core_clk(handle, devid, broadcast_type, freq);
 
 	bbm_byte_write(handle, devid, BBM_CENTER_CH_NUM, subch);
 
 	switch (broadcast_type) {
 	case ISDBT_1SEG:
-	case ISDBTMM_1SEG:
 	case ISDBTSB_1SEG:
-	case ISDBT_CATV_1SEG:
 		freq -= 380;
 		break;
 	case ISDBTSB_3SEG:
-#if (BBM_BAND_WIDTH == 6)
-		freq -= 1000;
-#elif (BBM_BAND_WIDTH == 7)
-		freq -= 1170;
-#else /* BBM)BAND_WIDTH == 8 */
-		freq -= 1330;
-#endif
+		if (BBM_BAND_WIDTH == 6)
+			freq -= 1000;
+		else if (BBM_BAND_WIDTH == 7)
+			freq -= 1170;
+		else /* BBM_BAND_WIDTH == 8 */
+			freq -= 1330;
 		break;
 	case ISDBT_13SEG:
-	case ISDBTMM_13SEG:
 	case ISDBT_CATV_13SEG:
+	case ISDBT_CATV_VHF_13SEG:
+		break;
+	case DVB_T:
+		break;
+	default:
 		break;
 	}
 
 	if (tuner->set_freq(handle, devid, freq))
 		return BBM_E_TN_SET_FREQ;
 
-	fc8300_reset(handle, devid);
+	fc8350_reset(handle, devid);
 
 #ifdef BBM_I2C_TSIF
 	if (devid == DIV_MASTER || devid == DIV_BROADCAST)
@@ -180,15 +184,51 @@ s32 tuner_set_freq(HANDLE handle, DEVICEID devid, u32 freq, u8 subch)
 	return BBM_OK;
 }
 
-s32 tuner_select(HANDLE handle, DEVICEID devid,
-		enum PRODUCT_TYPE product, enum BROADCAST_TYPE broadcast)
+s32 tuner_select(HANDLE handle, DEVICEID devid, enum PRODUCT_TYPE product,
+		enum BROADCAST_TYPE broadcast)
 {
+	struct ISDBT_OPEN_INFO_T *hOpen
+		= (struct ISDBT_OPEN_INFO_T *)handle;
 	switch (product) {
-	case FC8300_TUNER:
-		tuner = &fc8300_tuner;
-		tuner_addr = FC8300_TUNER_ADDR;
+	case FC8350_TUNER:
+		tuner = &fc8350_tuner;
+		fc8350_tuner_addr = FC8350_TUNER_ADDR;
 		broadcast_type = broadcast;
+
+		/* SLR & CS */
+		bbm_byte_write(handle, DIV_BROADCAST,
+				BBM_CFTSCFG_CACPGPOWTH_13SEG, 0x20);
+		bbm_byte_write(handle, DIV_BROADCAST,
+				BBM_FAIP_MTD_SR_SHIFT_TH, 0x40);
+		bbm_byte_write(handle, DIV_BROADCAST,
+				BBM_SA_1D_END_SYM_IDX, 0x08);
+		bbm_byte_write(handle, DIV_BROADCAST,
+				BBM_PRE_DAGC2_EN, 0x00);
+		bbm_byte_write(handle, DIV_BROADCAST,
+				BBM_ICIC_ON_MFD_TH, 0x00);
+		bbm_byte_write(handle, DIV_BROADCAST,
+				BBM_RFLDO_VCTRL, 0x08);
+		bbm_byte_write(handle, devid,
+				BBM_PAD_MUX74, 0x3f);
+		bbm_byte_write(handle, devid,
+				BBM_ZERO_GAIN_CR34, 0x33);
+		bbm_byte_write(handle, DIV_BROADCAST,
+				BBM_DVBT_ZERO_GAIN_CR12_FD, 0x02);
+		bbm_byte_write(handle, DIV_BROADCAST,
+				BBM_DVBT_ZERO_GAIN_CR23_FD, 0x03);
+		bbm_byte_write(handle, DIV_BROADCAST,
+				BBM_DVBT_ZERO_GAIN_CR34_FD, 0x04);
+		bbm_byte_write(handle, DIV_BROADCAST,
+				BBM_DVBT_ZERO_GAIN_CR56_FD, 0x05);
+		bbm_byte_write(handle, DIV_BROADCAST,
+				BBM_DVBT_ZERO_GAIN_CR78_FD, 0x05);
+
+		if (hOpen->driver_config.b_ext_lna)
+			bbm_byte_write(handle, DIV_BROADCAST
+				, BBM_PAD_MUX30, 0xc0);
 		break;
+	default:
+		return BBM_NOK;
 	}
 
 	if (tuner == NULL)
@@ -197,7 +237,7 @@ s32 tuner_select(HANDLE handle, DEVICEID devid,
 	if (tuner->init(handle, devid, broadcast))
 		return BBM_E_TN_INIT;
 
-	fc8300_set_broadcast_mode(handle, devid, broadcast);
+	fc8350_set_broadcast_mode(handle, devid, broadcast);
 
 	return BBM_OK;
 }

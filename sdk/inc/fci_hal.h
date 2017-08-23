@@ -1,5 +1,5 @@
 /*****************************************************************************
-	Copyright(c) 2013 FCI Inc. All Rights Reserved
+	Copyright(c) 2017 FCI Inc. All Rights Reserved
 
 	File name : fci_hal.h
 
@@ -35,8 +35,8 @@ extern s32 bbm_read(HANDLE handle, DEVICEID devid, u16 addr, u8 *data);
 extern s32 bbm_byte_read(HANDLE handle, DEVICEID devid, u16 addr, u8 *data);
 extern s32 bbm_word_read(HANDLE handle, DEVICEID devid, u16 addr, u16 *data);
 extern s32 bbm_long_read(HANDLE handle, DEVICEID devid, u16 addr, u32 *data);
-extern s32 bbm_bulk_read(HANDLE handle, DEVICEID devid,
-		u16 addr, u8 *data, u16 length);
+extern s32 bbm_bulk_read(HANDLE handle, DEVICEID devid, u16 addr, u8 *data,
+		u16 length);
 extern s32 bbm_write(HANDLE handle, DEVICEID devid, u16 addr, u8 data);
 extern s32 bbm_byte_write(HANDLE handle, DEVICEID devid, u16 addr, u8 data);
 extern s32 bbm_word_write(HANDLE handle, DEVICEID devid, u16 addr, u16 data);

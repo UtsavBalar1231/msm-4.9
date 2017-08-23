@@ -1,7 +1,7 @@
 /*****************************************************************************
-	Copyright(c) 2013 FCI Inc. All Rights Reserved
+	Copyright(c) 2017 FCI Inc. All Rights Reserved
 
-	File name : fc8300.h
+	File name : fc8350.h
 
 	Description : Header file of Driver
 
@@ -31,6 +31,8 @@ extern "C" {
 #endif
 
 #include <linux/list.h>
+#include <linux/dma-mapping.h>
+#include <linux/platform_device.h>
 
 #include "fci_types.h"
 #include "fci_ringbuffer.h"
@@ -38,16 +40,17 @@ extern "C" {
 #define CTL_TYPE 0
 #define TS_TYPE 1
 
-#define MAX_OPEN_NUM 		8
+#define MAX_OPEN_NUM	8
 
 #define IOCTL_MAGIC	't'
+#define DRV_VER "R-ITE-8350-20170705"
 
-struct ioctl_info{
+struct ioctl_info {
 	uint32_t size;
 	uint32_t buff[128];
 };
 
-#define IOCTL_MAXNR                     25
+#define IOCTL_MAXNR                     30
 
 #define IOCTL_ISDBT_RESET	\
 	_IO(IOCTL_MAGIC, 0)
@@ -107,25 +110,32 @@ struct ioctl_info{
 	_IO(IOCTL_MAGIC, 23)
 #define IOCTL_ISDBT_POWER_OFF	\
 	_IO(IOCTL_MAGIC, 24)
+#define IOCTL_ISDBT_CONFIG_DRIVER	\
+	_IOW(IOCTL_MAGIC, 25, struct ioctl_info)
 
-struct ISDBT_OPEN_INFO_T{
+struct ISDBT_OPEN_INFO_T {
 	HANDLE				*hInit;
 	struct list_head		hList;
 	struct fci_ringbuffer		RingBuffer;
 	u8				*buf;
 	u8				isdbttype;
+	struct drv_cfg	driver_config;
 };
 
-struct ISDBT_INIT_INFO_T{
+struct ISDBT_INIT_INFO_T {
 	struct list_head		hHead;
 };
 
-enum ISDBT_MODE{
+enum ISDBT_MODE {
 	ISDBT_POWERON       = 0,
 	ISDBT_POWEROFF	    = 1,
 	ISDBT_DATAREAD		= 2
 };
 
+extern struct of_device_id fc8350_match_table[];
+extern struct miscdevice fc8350_misc_device;
+s32 isdbt_chip_id(void);
+void isdbt_exit(void);
 extern int isdbt_open(struct inode *inode, struct file *filp);
 extern long isdbt_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
 extern int isdbt_release(struct inode *inode, struct file *filp);

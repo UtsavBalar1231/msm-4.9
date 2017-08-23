@@ -1,5 +1,5 @@
 /*****************************************************************************
-	Copyright(c) 2013 FCI Inc. All Rights Reserved
+	Copyright(c) 2017 FCI Inc. All Rights Reserved
 
 	File name : fci_tun.h
 
@@ -36,20 +36,18 @@ enum I2C_TYPE {
 };
 
 enum PRODUCT_TYPE {
-	FC8300_TUNER        = 8300,
+	FC8350_TUNER        = 8350
 };
 
-extern s32 tuner_ctrl_select(HANDLE handle, DEVICEID devid,
-		enum I2C_TYPE type);
+extern s32 tuner_ctrl_select(HANDLE handle, DEVICEID devid, enum I2C_TYPE type);
 extern s32 tuner_ctrl_deselect(HANDLE handle, DEVICEID devid);
 extern s32 tuner_select(HANDLE handle, DEVICEID devid,
 		enum PRODUCT_TYPE product, enum BROADCAST_TYPE broadcast);
 extern s32 tuner_deselect(HANDLE handle, DEVICEID devid);
-
-extern s32 tuner_i2c_read(HANDLE handle, DEVICEID devid,
-		u8 addr, u8 alen, u8 *data, u8 len);
-extern s32 tuner_i2c_write(HANDLE handle, DEVICEID devid,
-		u8 addr, u8 alen, u8 *data, u8 len);
+extern s32 tuner_i2c_read(HANDLE handle, DEVICEID devid, u8 addr, u8 alen,
+		u8 *data, u8 len);
+extern s32 tuner_i2c_write(HANDLE handle, DEVICEID devid, u8 addr, u8 alen,
+		u8 *data, u8 len);
 extern s32 tuner_set_freq(HANDLE handle, DEVICEID devid, u32 freq, u8 subch);
 extern s32 tuner_get_rssi(HANDLE handle, DEVICEID devid, s32 *rssi);
 

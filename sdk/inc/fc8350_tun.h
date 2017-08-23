@@ -1,9 +1,9 @@
 /*****************************************************************************
-	Copyright(c) 2013 FCI Inc. All Rights Reserved
+	Copyright(c) 2017 FCI Inc. All Rights Reserved
 
-	File name : fc8300_bb.h
+	File name : fc8350_tun.h
 
-	Description : header of baseband driver
+	Description : header of FC8350 tuner driver
 
 	This program is free software; you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,26 +22,22 @@
 	History :
 	----------------------------------------------------------------------
 *******************************************************************************/
-#ifndef __FC8300_BB__
-#define __FC8300_BB__
+#ifndef __FC8350_TUN_H__
+#define __FC8350_TUN_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern s32 fc8300_reset(HANDLE handle, DEVICEID devid);
-extern s32 fc8300_probe(HANDLE handle, DEVICEID devid);
-extern s32 fc8300_init(HANDLE handle, DEVICEID devid);
-extern s32 fc8300_deinit(HANDLE handle, DEVICEID devid);
-extern s32 fc8300_scan_status(HANDLE handle, DEVICEID devid);
-extern s32 fc8300_set_broadcast_mode(HANDLE handle, DEVICEID devid,
-		enum BROADCAST_TYPE broadcast);
-extern s32 fc8300_set_core_clk(HANDLE handle, DEVICEID devid,
-		enum BROADCAST_TYPE broadcast, u32 freq);
+extern s32 fc8350_tuner_init(HANDLE handle, DEVICEID devid,
+				enum BROADCAST_TYPE broadcast);
+extern s32 fc8350_set_freq(HANDLE handle, DEVICEID devid, u32 freq);
+extern s32 fc8350_get_rssi(HANDLE handle, DEVICEID devid, s32 *rssi);
+extern s32 fc8350_tuner_deinit(HANDLE handle, DEVICEID devid);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* __FC8300_BB__ */
+#endif /* __FC8350_TUN_H__ */
 

@@ -1,7 +1,7 @@
 /*****************************************************************************
-	Copyright(c) 2013 FCI Inc. All Rights Reserved
+	Copyright(c) 2017 FCI Inc. All Rights Reserved
 
-	File name : fc8300_isr.c
+	File name : fc8350_isr.c
 
 	Description : source of interrupt service routine
 
@@ -23,38 +23,35 @@
 	----------------------------------------------------------------------
 *******************************************************************************/
 #include "fci_types.h"
-#include "fc8300_regs.h"
+#include "fc8350_regs.h"
 #include "fci_hal.h"
+#include "fci_oal.h"
 
-s32 (*fc8300_ac_callback)(ulong userdata, u8 bufid, u8 *data, s32 length) = NULL;
-s32 (*fc8300_ts_callback)(ulong userdata, u8 bufid, u8 *data, s32 length) = NULL;
-
-ulong fc8300_ac_user_data;
-ulong fc8300_ts_user_data;
+s32 (*fc8350_ts_callback)(ulong userdata, u8 bufid, u8 *data, s32 length);
+ulong fc8350_ts_user_data;
 
 #ifndef BBM_I2C_TSIF
-static u8 ts_buffer[188 * 320];
-static void fc8300_data(HANDLE handle, DEVICEID devid, u8 buf_int_status)
+static u8 ts_buffer[TS0_BUF_LENGTH];
+static void fc8350_data(HANDLE handle, DEVICEID devid, u8 buf_int_status)
 {
-	u32 size = 0;
-	u32 rc;
+	u32 res;
 
-	if (buf_int_status == 1) {
-		size = TS0_BUF_LENGTH;
-			rc = bbm_data(handle, devid,
-				BBM_TS0_DATA, &ts_buffer[0], size);
-			if (BBM_OK != rc)
-				return;
+	if (buf_int_status) {
+		res = bbm_data(handle, devid,
+				BBM_TS0_DATA, &ts_buffer[0], TS0_BUF_LENGTH);
+		if (res != BBM_OK)
+			return;
 
-			if (fc8300_ts_callback)
-				(*fc8300_ts_callback)(fc8300_ts_user_data,
-					0, &ts_buffer[0], size);
+
+		if (fc8350_ts_callback)
+			(*fc8350_ts_callback)(fc8350_ts_user_data,
+					0, &ts_buffer[0], TS0_BUF_LENGTH);
 	}
 }
 #endif /* #ifndef BBM_I2C_TSIF */
 
 #ifdef BBM_AUX_INT
-static void fc8300_aux_int(HANDLE handle, DEVICEID devid, u8 aux_int_status)
+static void fc8350_aux_int(HANDLE handle, DEVICEID devid, u8 aux_int_status)
 {
 	if (aux_int_status & AUX_INT_TMCC_INT_SRC)
 		;
@@ -133,7 +130,7 @@ static void fc8300_aux_int(HANDLE handle, DEVICEID devid, u8 aux_int_status)
 }
 #endif
 
-void fc8300_isr(HANDLE handle)
+void fc8350_isr(HANDLE handle)
 {
 #ifdef BBM_AUX_INT
 	u8 aux_int_status = 0;
@@ -148,7 +145,7 @@ void fc8300_isr(HANDLE handle)
 		bbm_byte_write(handle, DIV_MASTER,
 				BBM_BUF_STATUS_CLEAR, buf_int_status);
 
-		fc8300_data(handle, DIV_MASTER, buf_int_status);
+		fc8350_data(handle, DIV_MASTER, buf_int_status);
 	}
 
 	buf_int_status = 0;
@@ -158,7 +155,7 @@ void fc8300_isr(HANDLE handle)
 		bbm_byte_write(handle, DIV_MASTER,
 				BBM_BUF_STATUS_CLEAR, buf_int_status);
 
-		fc8300_data(handle, DIV_MASTER, buf_int_status);
+		fc8350_data(handle, DIV_MASTER, buf_int_status);
 	}
 #endif
 
@@ -170,7 +167,7 @@ void fc8300_isr(HANDLE handle)
 		bbm_byte_write(handle, DIV_MASTER,
 				BBM_AUX_STATUS_CLEAR, aux_int_status);
 
-		fc8300_aux_int(handle, DIV_MASTER, aux_int_status);
+		fc8350_aux_int(handle, DIV_MASTER, aux_int_status);
 	}
 #endif
 }

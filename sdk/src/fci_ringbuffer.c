@@ -1,5 +1,5 @@
 /*****************************************************************************
-	 Copyright(c) 2013 FCI Inc. All Rights Reserved
+	 Copyright(c) 2016 FCI Inc. All Rights Reserved
 
 	 File name : fci_ringbuffer.c
 
@@ -21,7 +21,7 @@
 
 	 History :
 	 ----------------------------------------------------------------------
-	 2010/11/25 	aslan.cho	initial
+	 2010/11/25	aslan.cho	initial
 *******************************************************************************/
 
 #include <linux/errno.h>

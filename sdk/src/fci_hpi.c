@@ -1,5 +1,5 @@
 /*****************************************************************************
-	Copyright(c) 2013 FCI Inc. All Rights Reserved
+	Copyright(c) 2017 FCI Inc. All Rights Reserved
 
 	File name : fci_hpi.c
 
@@ -24,7 +24,6 @@
 *******************************************************************************/
 #include "fci_types.h"
 #include "fci_hal.h"
-#include "fc8300_regs.h" /* deprecated */
 
 s32 fci_hpi_init(HANDLE handle, DEVICEID devid, s32 speed, s32 slaveaddr)
 {
@@ -34,13 +33,13 @@ s32 fci_hpi_init(HANDLE handle, DEVICEID devid, s32 speed, s32 slaveaddr)
 s32 fci_hpi_read(HANDLE handle, DEVICEID devid,
 		u8 chip, u8 addr, u8 alen, u8 *data, u8 len)
 {
-	return bbm_bulk_read(handle, devid, 0x0f00 | addr, data, len);
+	return bbm_bulk_read(handle, devid, 0xc000 | addr, data, len);
 }
 
 s32 fci_hpi_write(HANDLE handle, DEVICEID devid,
 		u8 chip, u8 addr, u8 alen, u8 *data, u8 len)
 {
-	return bbm_bulk_write(handle, devid, 0x0f00 | addr, data, len);
+	return bbm_bulk_write(handle, devid, 0xc000 | addr, data, len);
 }
 
 s32 fci_hpi_deinit(HANDLE handle, DEVICEID devid)

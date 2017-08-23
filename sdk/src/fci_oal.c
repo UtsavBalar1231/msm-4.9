@@ -1,5 +1,5 @@
 /*****************************************************************************
-	Copyright(c) 2013 FCI Inc. All Rights Reserved
+	Copyright(c) 2017 FCI Inc. All Rights Reserved
 
 	File name : fci_oal.c
 
@@ -26,12 +26,9 @@
 #include <linux/delay.h>
 #include <linux/uaccess.h>
 #include <linux/spinlock.h>
-
 #include "fci_types.h"
 
-spinlock_t	irq_lock;
-
-void print_log(HANDLE handle, s8 *fmt, ...)
+void print_log(HANDLE handle, char *fmt, ...)
 {
 	va_list ap;
 	char str[256];
@@ -50,26 +47,26 @@ void msWait(s32 ms)
 	mdelay(ms);
 }
 
+#if 0
 /* Write your own mutual exclusion method */
-void OAL_CREATE_SEMAPHORE(void)
+void OAL_CREATE_SEMAPHORE()
 {
 	/* called in driver initialization */
-	spin_lock_init(&irq_lock);
 }
 
-void OAL_DELETE_SEMAPHORE(void)
+void OAL_DELETE_SEMAPHORE()
 {
 	/* called in driver deinitializaton */
 }
 
-void OAL_OBTAIN_SEMAPHORE(void)
+void OAL_OBTAIN_SEMAPHORE()
 {
-	spin_lock_irq(&irq_lock);
+
 }
 
-void OAL_RELEASE_SEMAPHORE(void)
+void OAL_RELEASE_SEMAPHORE()
 {
-	spin_unlock_irq(&irq_lock);
-}
 
+}
+#endif
 

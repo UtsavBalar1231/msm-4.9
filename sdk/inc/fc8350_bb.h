@@ -1,9 +1,9 @@
 /*****************************************************************************
-	Copyright(c) 2013 FCI Inc. All Rights Reserved
+	Copyright(c) 2017 FCI Inc. All Rights Reserved
 
-	File name : fc8300_isr.h
+	File name : fc8350_bb.h
 
-	Description : header of interrupt service routine
+	Description : header of baseband driver
 
 	This program is free software; you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -22,23 +22,26 @@
 	History :
 	----------------------------------------------------------------------
 *******************************************************************************/
-#ifndef __FC8300_ISR__
-#define __FC8300_ISR__
+#ifndef __FC8350_BB__
+#define __FC8350_BB__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern ulong fc8300_ac_user_data;
-extern ulong fc8300_ts_user_data;
-
-extern s32 (*fc8300_ac_callback)(ulong userdata, u8 bufid, u8 *data, s32 length);
-extern s32 (*fc8300_ts_callback)(ulong userdata, u8 bufid, u8 *data, s32 length);
-
-extern void fc8300_isr(HANDLE handle);
+extern s32 fc8350_reset(HANDLE handle, DEVICEID devid);
+extern s32 fc8350_probe(HANDLE handle, DEVICEID devid);
+extern s32 fc8350_init(HANDLE handle, DEVICEID devid);
+extern s32 fc8350_deinit(HANDLE handle, DEVICEID devid);
+extern s32 fc8350_scan_status(HANDLE handle, DEVICEID devid);
+extern s32 fc8350_set_broadcast_mode(HANDLE handle, DEVICEID devid,
+		enum BROADCAST_TYPE broadcast);
+extern s32 fc8350_set_core_clk(HANDLE handle, DEVICEID devid,
+		enum BROADCAST_TYPE broadcast, u32 freq);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* __FC8300_ISR__ */
+
+#endif /* __FC8350_BB__ */
 

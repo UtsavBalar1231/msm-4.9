@@ -1,9 +1,9 @@
 /*****************************************************************************
-	Copyright(c) 2013 FCI Inc. All Rights Reserved
+	Copyright(c) 2017 FCI Inc. All Rights Reserved
 
-	File name : fc8300_tun_table.c
+	File name : fc8350_isr.h
 
-	Description : header of FC8300 tuner driver
+	Description : header of interrupt service routine
 
 	This program is free software; you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -21,24 +21,21 @@
 
 	History :
 	----------------------------------------------------------------------
-******************************************************************************/
-#include "fci_types.h"
-
-#ifndef __FC8300_TUN_TABLE_H__
-#define __FC8300_TUN_TABLE_H__
+*******************************************************************************/
+#ifndef __FC8350_ISR__
+#define __FC8350_ISR__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern u32 ch_mode_0[7][57][20];
-extern u32 ch_mode_1[7][9][16];
-extern u32 ch_mode_4[7][57][20];
-extern u32 ch_mode_5[7][2][16];
-extern u32 ch_mode_6[7][113][21];
+extern ulong fc8350_ts_user_data;
+extern s32 (*fc8350_ts_callback)(ulong userdata
+	, u8 bufid, u8 *data, s32 length);
+extern void fc8350_isr(HANDLE handle);
 
 #ifdef __cplusplus
 }
 #endif
+#endif /* __FC8350_ISR__ */
 
-#endif /* __FC8300_TUN_TABLE_H__ */

@@ -1,4 +1,4 @@
 obj-m := isdbt.o
 
 ccflags-y := -I$(src)/../inc
-isdbt-y := bbm.o fc8300.o fc8300_bb.o fc8300_i2c.o fc8300_isr.o fc8300_ppi.o fc8300_spi.o fc8300_tun.o fc8300_tun_table.o fci_hal.o fci_hpi.o fci_oal.o fci_ringbuffer.o fci_tun.o
+isdbt-y := bbm.o fc8350.o fc8350_bb.o fc8350_i2c.o fc8350_isr.o fc8350_spi.o fc8350_tun.o fc8350_tun_table.o fci_hal.o fci_hpi.o fci_oal.o fci_ringbuffer.o fci_tun.o

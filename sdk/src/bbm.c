@@ -1,5 +1,5 @@
 /*****************************************************************************
-	Copyright(c) 2013 FCI Inc. All Rights Reserved
+	Copyright(c) 2017 FCI Inc. All Rights Reserved
 
 	File name : bbm.c
 
@@ -25,14 +25,14 @@
 #include "fci_types.h"
 #include "fci_tun.h"
 #include "fci_hal.h"
-#include "fc8300_bb.h"
-#include "fc8300_isr.h"
+#include "fc8350_bb.h"
+#include "fc8350_isr.h"
 
 s32 bbm_com_reset(HANDLE handle, DEVICEID devid)
 {
 	s32 res;
 
-	res = fc8300_reset(handle, devid);
+	res = fc8350_reset(handle, devid);
 
 	return res;
 }
@@ -41,7 +41,7 @@ s32 bbm_com_probe(HANDLE handle, DEVICEID devid)
 {
 	s32 res;
 
-	res = fc8300_probe(handle, devid);
+	res = fc8350_probe(handle, devid);
 
 	return res;
 }
@@ -50,7 +50,7 @@ s32 bbm_com_init(HANDLE handle, DEVICEID devid)
 {
 	s32 res;
 
-	res = fc8300_init(handle, devid);
+	res = fc8350_init(handle, devid);
 
 	return res;
 }
@@ -59,7 +59,7 @@ s32 bbm_com_deinit(HANDLE handle, DEVICEID devid)
 {
 	s32 res;
 
-	res = fc8300_deinit(handle, devid);
+	res = fc8350_deinit(handle, devid);
 
 	return res;
 }
@@ -244,7 +244,7 @@ s32 bbm_com_scan_status(HANDLE handle,  DEVICEID devid)
 {
 	s32 res;
 
-	res = fc8300_scan_status(handle, devid);
+	res = fc8350_scan_status(handle, devid);
 
 	return res;
 }
@@ -270,39 +270,21 @@ s32 bbm_com_hostif_deselect(HANDLE handle)
 s32 bbm_com_ts_callback_register(ulong userdata,
 		s32 (*callback)(ulong userdata, u8 bufid, u8 *data, s32 length))
 {
-	fc8300_ts_user_data = userdata;
-	fc8300_ts_callback = callback;
+	fc8350_ts_user_data = userdata;
+	fc8350_ts_callback = callback;
 
 	return BBM_OK;
 }
 
 s32 bbm_com_ts_callback_deregister(void)
 {
-	fc8300_ts_user_data = 0;
-	fc8300_ts_callback = NULL;
+	fc8350_ts_user_data = 0;
+	fc8350_ts_callback = NULL;
 
 	return BBM_OK;
 }
-
-s32 bbm_com_ac_callback_register(ulong userdata,
-		s32 (*callback)(ulong userdata, u8 bufid, u8 *data, s32 length))
-{
-	fc8300_ac_user_data = userdata;
-	fc8300_ac_callback = callback;
-
-	return BBM_OK;
-}
-
-s32 bbm_com_ac_callback_deregister(void)
-{
-	fc8300_ac_user_data = 0;
-	fc8300_ac_callback = NULL;
-
-	return BBM_OK;
-}
-
 void bbm_com_isr(HANDLE handle)
 {
-	fc8300_isr(handle);
+	fc8350_isr(handle);
 }
 

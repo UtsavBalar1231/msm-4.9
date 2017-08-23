@@ -1,5 +1,5 @@
 /*****************************************************************************
-	Copyright(c) 2013 FCI Inc. All Rights Reserved
+	Copyright(c) 2016 FCI Inc. All Rights Reserved
 
 	File name : fci_ringbuffer.h
 

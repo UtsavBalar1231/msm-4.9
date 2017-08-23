@@ -1,5 +1,5 @@
 /*****************************************************************************
-	Copyright(c) 2013 FCI Inc. All Rights Reserved
+	Copyright(c) 2017 FCI Inc. All Rights Reserved
 
 	File name : fci_oal.h
 
@@ -31,10 +31,10 @@ extern "C" {
 
 extern void print_log(HANDLE handle, s8 *fmt, ...);
 extern void msWait(s32 ms);
-extern void OAL_CREATE_SEMAPHORE(void);
-extern void OAL_DELETE_SEMAPHORE(void);
-extern void OAL_OBTAIN_SEMAPHORE(void);
-extern void OAL_RELEASE_SEMAPHORE(void);
+/*extern void OAL_CREATE_SEMAPHORE();
+extern void OAL_DELETE_SEMAPHORE();
+extern void OAL_OBTAIN_SEMAPHORE();
+extern void OAL_RELEASE_SEMAPHORE();*/
 
 #ifdef __cplusplus
 }
