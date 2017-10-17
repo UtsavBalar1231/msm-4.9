@@ -570,13 +570,11 @@ long isdbt_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		print_log(hInit, "[FC8350] IOCTL_ISDBT_DEINIT\n");
 #endif
 		break;
-	
 	case IOCTL_ISDBT_CONFIG_DRIVER:
 		err = copy_from_user((void *)&info, (void *)arg, size);
 		memcpy((void *)&hOpen->driver_config, (void *)&info.buff[0]
 			, sizeof(struct drv_cfg));
-                //MMI_STOPSHIP, DTV frequency set 26MHz follow hardware design of evert project.
-		bbm_xtal_freq		= 26000;//hOpen->driver_config.v_xtal_freq;
+		bbm_xtal_freq		= hOpen->driver_config.v_xtal_freq;
 		bbm_bandwidth		= hOpen->driver_config.v_band_width;
 		bbm_bandwidth_dvb	= hOpen->driver_config.v_band_width_dvb;
 		bbm_tsif_clk		= hOpen->driver_config.v_tsif_clk;
