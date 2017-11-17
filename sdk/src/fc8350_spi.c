@@ -94,10 +94,12 @@ static void spi_swap_set(struct spi_device *spi, int swap_cfg)
 }
 #endif
 
+
+extern s32 isdbt_chip_id(void);
 static DEFINE_MUTEX(fci_spi_lock);
 static int fc8350_spi_probe(struct spi_device *spi)
 {
-	s32 ret;
+	s32 ret = 0;
 
 	print_log(0, "fc8350_spi_probe\n");
 
@@ -111,6 +113,9 @@ static int fc8350_spi_probe(struct spi_device *spi)
 		return ret;
 
 	fc8350_spi = spi;
+
+	printk("%s ,all init success , start get chip id\n", __func__);
+	isdbt_chip_id();
 
 	return ret;
 }

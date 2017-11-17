@@ -74,8 +74,7 @@ extern s32 bbm_com_ts_callback_register(ulong userdata,
 		s32 (*callback)(ulong userdata
 		, u8 bufid, u8 *data, s32 length));
 extern s32 bbm_com_ts_callback_deregister(void);
-extern void bbm_com_isr(HANDLE handle);
-
+//extern void bbm_com_isr(HANDLE handle);
 #ifdef __cplusplus
 }
 #endif

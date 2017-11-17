@@ -22,10 +22,27 @@
 	History :
 	----------------------------------------------------------------------
 *******************************************************************************/
+#include <linux/miscdevice.h>
+#include <linux/interrupt.h>
+#include <linux/kthread.h>
+#include <linux/poll.h>
+#include <linux/vmalloc.h>
+#include <linux/irq.h>
+#include <linux/delay.h>
+#include <linux/slab.h>
+#include <linux/gpio.h>
+#include <linux/module.h>
+#include <linux/io.h>
+#include <linux/of.h>
+#include <linux/of_gpio.h>
 #include "fci_types.h"
 #include "fc8350_regs.h"
 #include "fci_hal.h"
 #include "fci_oal.h"
+#include "fc8350.h"
+#include "bbm.h"
+#include "fci_tun.h"
+#include "fc8350_isr.h"
 
 s32 (*fc8350_ts_callback)(ulong userdata, u8 bufid, u8 *data, s32 length);
 ulong fc8350_ts_user_data;
@@ -130,7 +147,9 @@ static void fc8350_aux_int(HANDLE handle, DEVICEID devid, u8 aux_int_status)
 }
 #endif
 
-void fc8350_isr(HANDLE handle)
+extern struct ISDBT_INIT_INFO_T *hInit_tmp;
+//void fc8350_isr(HANDLE handle)
+void fc8350_isr(struct work_struct *work)
 {
 #ifdef BBM_AUX_INT
 	u8 aux_int_status = 0;
@@ -139,35 +158,35 @@ void fc8350_isr(HANDLE handle)
 #ifndef BBM_I2C_TSIF
 	u8 buf_int_status = 0;
 
-	bbm_byte_read(handle, DIV_MASTER, BBM_BUF_STATUS_CLEAR,
+	bbm_byte_read(hInit_tmp, DIV_MASTER, BBM_BUF_STATUS_CLEAR,
 					&buf_int_status);
 	if (buf_int_status) {
-		bbm_byte_write(handle, DIV_MASTER,
+		bbm_byte_write(hInit_tmp, DIV_MASTER,
 				BBM_BUF_STATUS_CLEAR, buf_int_status);
 
-		fc8350_data(handle, DIV_MASTER, buf_int_status);
+		fc8350_data(hInit_tmp, DIV_MASTER, buf_int_status);
 	}
 
 	buf_int_status = 0;
-	bbm_byte_read(handle, DIV_MASTER, BBM_BUF_STATUS_CLEAR,
+	bbm_byte_read(hInit_tmp, DIV_MASTER, BBM_BUF_STATUS_CLEAR,
 					&buf_int_status);
 	if (buf_int_status) {
-		bbm_byte_write(handle, DIV_MASTER,
+		bbm_byte_write(hInit_tmp, DIV_MASTER,
 				BBM_BUF_STATUS_CLEAR, buf_int_status);
 
-		fc8350_data(handle, DIV_MASTER, buf_int_status);
+		fc8350_data(hInit_tmp, DIV_MASTER, buf_int_status); 
 	}
 #endif
 
 #ifdef BBM_AUX_INT
-	bbm_byte_read(handle, DIV_MASTER, BBM_AUX_STATUS_CLEAR,
+	bbm_byte_read(hInit_tmp, DIV_MASTER, BBM_AUX_STATUS_CLEAR,
 					&aux_int_status);
 
 	if (aux_int_status) {
-		bbm_byte_write(handle, DIV_MASTER,
+		bbm_byte_write(hInit_tmp, DIV_MASTER,
 				BBM_AUX_STATUS_CLEAR, aux_int_status);
 
-		fc8350_aux_int(handle, DIV_MASTER, aux_int_status);
+		fc8350_aux_int(hInit_tmp, DIV_MASTER, aux_int_status);
 	}
 #endif
 }

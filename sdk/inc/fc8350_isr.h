@@ -32,8 +32,8 @@ extern "C" {
 extern ulong fc8350_ts_user_data;
 extern s32 (*fc8350_ts_callback)(ulong userdata
 	, u8 bufid, u8 *data, s32 length);
-extern void fc8350_isr(HANDLE handle);
-
+//extern void fc8350_isr(HANDLE handle);
+//extern void fc8350_isr(struct work_struct *work);
 #ifdef __cplusplus
 }
 #endif

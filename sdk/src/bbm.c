@@ -283,8 +283,10 @@ s32 bbm_com_ts_callback_deregister(void)
 
 	return BBM_OK;
 }
+/*
 void bbm_com_isr(HANDLE handle)
 {
 	fc8350_isr(handle);
 }
+*/
 

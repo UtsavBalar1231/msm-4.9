@@ -35,6 +35,7 @@
 #include <linux/io.h>
 #include <linux/of.h>
 #include <linux/of_gpio.h>
+#include <linux/workqueue.h>
 
 #include "fc8350.h"
 #include "bbm.h"
@@ -46,6 +47,11 @@
 
 struct ISDBT_INIT_INFO_T *hInit;
 #define RING_BUFFER_SIZE	(188 * 320 * 8)
+#include <linux/spi/spi.h>
+#include "fci_types.h"
+
+#include <linux/of_irq.h>
+
 
 /* GPIO(RESET & INTRRUPT) Setting */
 #define FC8350_NAME		"isdbt"
@@ -77,24 +83,33 @@ u32 bbm_bandwidth_dvb;
 u32 bbm_tsif_clk;
 #ifndef BBM_I2C_TSIF
 static u8 isdbt_isr_sig;
+struct ISDBT_INIT_INFO_T *hInit_tmp;
+
+static struct work_struct work_tmp;
+extern void fc8350_isr(struct work_struct *work);
 static irqreturn_t isdbt_threaded_irq(int irq, void *dev_id)
 {
-	struct ISDBT_INIT_INFO_T *hInit = (struct ISDBT_INIT_INFO_T *)dev_id;
+	//struct ISDBT_INIT_INFO_T *hInit = (struct ISDBT_INIT_INFO_T *)dev_id;
 
-	mutex_lock(&driver_mode_lock);
+	//printk("[%s][%d]\n",__func__,__LINE__);
+	//mutex_lock(&driver_mode_lock);
 	isdbt_isr_sig = 1;
-	if (driver_mode == ISDBT_POWERON)
-		bbm_com_isr(hInit);
+	if (driver_mode == ISDBT_POWERON){
+		//bbm_com_isr(hInit);
+		schedule_work(&work_tmp);
+	}
 	isdbt_isr_sig = 0;
-	mutex_unlock(&driver_mode_lock);
+	//mutex_unlock(&driver_mode_lock);
 
 	return IRQ_HANDLED;
 }
+
 
 static irqreturn_t isdbt_irq(int irq, void *dev_id)
 {
 	return IRQ_WAKE_THREAD;
 }
+
 
 void isdbt_isr_check(HANDLE hDevice)
 {
@@ -184,9 +199,12 @@ int isdbt_hw_setting(HANDLE hDevice)
 			, GPIO_ISDBT_IRQ, err);
 	goto request_isdbt_irq;
 	}
+
 #endif
 
+
 	return 0;
+
 #ifndef BBM_I2C_TSIF
 request_isdbt_irq:
 	gpio_free(GPIO_ISDBT_IRQ);
@@ -194,6 +212,7 @@ request_isdbt_irq:
 #if 0
 gpio_isdbt_rst:
 	gpio_free(GPIO_ISDBT_PWR_EN);
+
 #endif
 gpio_isdbt_en:
 	return err;
@@ -642,6 +661,8 @@ static int fc8350_dt_init(void)
 	if (rc)
 		print_log(hInit, "no dt xtal-freq config, using default\n");
 
+	printk("[%s]get dts success: enable_gpio=%d,reset_gpio=%d,irq_gpio=%d,bbm_xtal_freq=%d\n",__func__,enable_gpio,reset_gpio,irq_gpio,bbm_xtal_freq);
+
 	bbm_bandwidth = DEFAULT_BBM_BAND_WIDTH;
 	bbm_bandwidth_dvb = DEFAULT_BBM_BAND_WIDTH_DVB;
 	bbm_tsif_clk = DEFAULT_BBM_TSIF_CLK;
@@ -699,6 +720,7 @@ int isdbt_init(void)
 		return res;
 	}
 	isdbt_hw_setting(hInit);
+	INIT_WORK(&work_tmp, &fc8350_isr);
 #ifndef BBM_I2C_TSIF
 	bbm_com_ts_callback_register((ulong)hInit, data_callback);
 #endif
@@ -710,14 +732,15 @@ int isdbt_init(void)
 	if (res)
 		print_log(hInit, "isdbt host interface select fail!\n");
 	INIT_LIST_HEAD(&(hInit->hHead));
+/*	printk("%s ,all init success , start get chip id\n", __func__);
 	res = isdbt_chip_id();
-	if (res)
+	if (res){
 		goto error_out;
-
+	}*/
 	return 0;
-error_out:
-	isdbt_exit();
-	return -ENODEV;
+//error_out:
+//	isdbt_exit();
+//	return -ENODEV;
 }
 
 void isdbt_exit(void)
