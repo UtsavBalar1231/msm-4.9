@@ -59,7 +59,6 @@ static void fc8350_data(HANDLE handle, DEVICEID devid, u8 buf_int_status)
 		if (res != BBM_OK)
 			return;
 
-
 		if (fc8350_ts_callback)
 			(*fc8350_ts_callback)(fc8350_ts_user_data,
 					0, &ts_buffer[0], TS0_BUF_LENGTH);
@@ -147,7 +146,7 @@ static void fc8350_aux_int(HANDLE handle, DEVICEID devid, u8 aux_int_status)
 }
 #endif
 
-extern struct ISDBT_INIT_INFO_T *hInit_tmp;
+extern struct ISDBT_INIT_INFO_T *hInit;
 //void fc8350_isr(HANDLE handle)
 void fc8350_isr(struct work_struct *work)
 {
@@ -157,36 +156,35 @@ void fc8350_isr(struct work_struct *work)
 
 #ifndef BBM_I2C_TSIF
 	u8 buf_int_status = 0;
-
-	bbm_byte_read(hInit_tmp, DIV_MASTER, BBM_BUF_STATUS_CLEAR,
+	bbm_byte_read(hInit, DIV_MASTER, BBM_BUF_STATUS_CLEAR,
 					&buf_int_status);
 	if (buf_int_status) {
-		bbm_byte_write(hInit_tmp, DIV_MASTER,
+		bbm_byte_write(hInit, DIV_MASTER,
 				BBM_BUF_STATUS_CLEAR, buf_int_status);
 
-		fc8350_data(hInit_tmp, DIV_MASTER, buf_int_status);
+		fc8350_data(hInit, DIV_MASTER, buf_int_status);
 	}
 
 	buf_int_status = 0;
-	bbm_byte_read(hInit_tmp, DIV_MASTER, BBM_BUF_STATUS_CLEAR,
+	bbm_byte_read(hInit, DIV_MASTER, BBM_BUF_STATUS_CLEAR,
 					&buf_int_status);
 	if (buf_int_status) {
-		bbm_byte_write(hInit_tmp, DIV_MASTER,
+		bbm_byte_write(hInit, DIV_MASTER,
 				BBM_BUF_STATUS_CLEAR, buf_int_status);
 
-		fc8350_data(hInit_tmp, DIV_MASTER, buf_int_status); 
+		fc8350_data(hInit, DIV_MASTER, buf_int_status);
 	}
 #endif
 
 #ifdef BBM_AUX_INT
-	bbm_byte_read(hInit_tmp, DIV_MASTER, BBM_AUX_STATUS_CLEAR,
+	bbm_byte_read(hInit, DIV_MASTER, BBM_AUX_STATUS_CLEAR,
 					&aux_int_status);
 
 	if (aux_int_status) {
-		bbm_byte_write(hInit_tmp, DIV_MASTER,
+		bbm_byte_write(hInit, DIV_MASTER,
 				BBM_AUX_STATUS_CLEAR, aux_int_status);
 
-		fc8350_aux_int(hInit_tmp, DIV_MASTER, aux_int_status);
+		fc8350_aux_int(hInit, DIV_MASTER, aux_int_status);
 	}
 #endif
 }

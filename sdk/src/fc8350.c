@@ -83,7 +83,6 @@ u32 bbm_bandwidth_dvb;
 u32 bbm_tsif_clk;
 #ifndef BBM_I2C_TSIF
 static u8 isdbt_isr_sig;
-struct ISDBT_INIT_INFO_T *hInit_tmp;
 
 static struct work_struct work_tmp;
 extern void fc8350_isr(struct work_struct *work);
@@ -661,8 +660,6 @@ static int fc8350_dt_init(void)
 	if (rc)
 		print_log(hInit, "no dt xtal-freq config, using default\n");
 
-	printk("[%s]get dts success: enable_gpio=%d,reset_gpio=%d,irq_gpio=%d,bbm_xtal_freq=%d\n",__func__,enable_gpio,reset_gpio,irq_gpio,bbm_xtal_freq);
-
 	bbm_bandwidth = DEFAULT_BBM_BAND_WIDTH;
 	bbm_bandwidth_dvb = DEFAULT_BBM_BAND_WIDTH_DVB;
 	bbm_tsif_clk = DEFAULT_BBM_TSIF_CLK;
@@ -732,15 +729,14 @@ int isdbt_init(void)
 	if (res)
 		print_log(hInit, "isdbt host interface select fail!\n");
 	INIT_LIST_HEAD(&(hInit->hHead));
-/*	printk("%s ,all init success , start get chip id\n", __func__);
 	res = isdbt_chip_id();
-	if (res){
+	if (res)
 		goto error_out;
-	}*/
+
 	return 0;
-//error_out:
-//	isdbt_exit();
-//	return -ENODEV;
+error_out:
+	isdbt_exit();
+	return -ENODEV;
 }
 
 void isdbt_exit(void)

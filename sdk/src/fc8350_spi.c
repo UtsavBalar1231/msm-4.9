@@ -94,8 +94,6 @@ static void spi_swap_set(struct spi_device *spi, int swap_cfg)
 }
 #endif
 
-
-extern s32 isdbt_chip_id(void);
 static DEFINE_MUTEX(fci_spi_lock);
 static int fc8350_spi_probe(struct spi_device *spi)
 {
@@ -113,9 +111,6 @@ static int fc8350_spi_probe(struct spi_device *spi)
 		return ret;
 
 	fc8350_spi = spi;
-
-	printk("%s ,all init success , start get chip id\n", __func__);
-	isdbt_chip_id();
 
 	return ret;
 }
@@ -143,18 +138,32 @@ static struct spi_driver fc8350_spi_driver = {
 int fci_spi_write_then_read(struct spi_device *spi
 	, u8 *txbuf, u16 tx_length, u8 *rxbuf, u16 rx_length)
 {
-	s32 res;
+	s32 res = -1;
 	struct spi_message  message;
-	struct spi_transfer x;
+	//struct spi_transfer x;
+	struct spi_transfer t[2];
 
 	if (spi == NULL) {
 		print_log(0, "[ERROR] FC8350_SPI Handle Fail...........\n");
 		return BBM_NOK;
 	}
 	spi_message_init(&message);
-	memset(&x, 0, sizeof(x));
-	spi_message_add_tail(&x, &message);
+	//memset(&x, 0, sizeof(x));
+	//spi_message_add_tail(&x, &message);
+	memset(t, 0, sizeof(t));
 	memcpy(wdata_buf, txbuf, tx_length);
+	t[0].tx_buf = wdata_buf;
+	t[0].len = tx_length;
+	t[0].bits_per_word = 8;
+	t[0].cs_change = 0;
+	spi_message_add_tail(&t[0], &message);
+
+	t[1].rx_buf = rdata_buf;
+	t[1].len = rx_length;
+	t[1].bits_per_word = 8;
+	t[1].cs_change = 0;
+	spi_message_add_tail(&t[1], &message);
+	/*
 	x.tx_buf = wdata_buf;
 	x.rx_buf = rdata_buf;
 	x.len = tx_length + rx_length;
@@ -177,10 +186,14 @@ int fci_spi_write_then_read(struct spi_device *spi
 		|S3C64XX_SPI_SWAP_RX_BYTE
 		|S3C64XX_SPI_SWAP_RX_HALF_WORD);
 #endif
+	*/
 	res = spi_sync(spi, &message);
 
 	if (rxbuf != NULL)
-		memcpy(rxbuf, x.rx_buf + tx_length, rx_length);
+		//memcpy(rxbuf, x.rx_buf + tx_length, rx_length);
+		memcpy(rxbuf, t[1].rx_buf, rx_length);
+	else
+		res = -1;
 
 	return res;
 }
@@ -245,7 +258,6 @@ static s32 spi_dataread(HANDLE handle, u8 devid,
 	tx_data[1] = (addr >> 8) & 0xff;
 	tx_data[2] = (command & 0xc0) | rxdiv | (devid & 0x000f);
 	tx_data[3] = length & 0xff;
-
 	res = fci_spi_write_then_read(fc8350_spi
 		, &tx_data[0], 4, data, length);
 
