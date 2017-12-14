@@ -158,11 +158,13 @@ int fci_spi_write_then_read(struct spi_device *spi
 	t[0].cs_change = 0;
 	spi_message_add_tail(&t[0], &message);
 
-	t[1].rx_buf = rdata_buf;
-	t[1].len = rx_length;
-	t[1].bits_per_word = 8;
-	t[1].cs_change = 0;
-	spi_message_add_tail(&t[1], &message);
+	if(rxbuf != NULL){
+		t[1].rx_buf = rdata_buf;
+		t[1].len = rx_length;
+		t[1].bits_per_word = 8;
+		t[1].cs_change = 0;
+		spi_message_add_tail(&t[1], &message);
+	}
 	/*
 	x.tx_buf = wdata_buf;
 	x.rx_buf = rdata_buf;
@@ -192,8 +194,6 @@ int fci_spi_write_then_read(struct spi_device *spi
 	if (rxbuf != NULL)
 		//memcpy(rxbuf, x.rx_buf + tx_length, rx_length);
 		memcpy(rxbuf, t[1].rx_buf, rx_length);
-	else
-		res = -1;
 
 	return res;
 }
