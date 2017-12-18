@@ -189,7 +189,7 @@ int isdbt_hw_setting(HANDLE hDevice)
 
 	gpio_direction_input(GPIO_ISDBT_IRQ);
 	irq_gpio=gpio_to_irq(GPIO_ISDBT_IRQ);
-	err = request_threaded_irq(GPIO_ISDBT_IRQ, isdbt_irq
+	err = request_threaded_irq(irq_gpio, isdbt_irq
 		, isdbt_threaded_irq, IRQF_TRIGGER_FALLING
 		, FC8350_NAME, hInit);
 	if (err < 0) {
