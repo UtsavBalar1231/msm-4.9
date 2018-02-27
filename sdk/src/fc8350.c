@@ -36,6 +36,8 @@
 #include <linux/of.h>
 #include <linux/of_gpio.h>
 #include <linux/workqueue.h>
+#include <linux/power_supply.h>
+#include <linux/notifier.h>
 
 #include "fc8350.h"
 #include "bbm.h"
@@ -85,6 +87,9 @@ u32 bbm_tsif_clk;
 static u8 isdbt_isr_sig;
 
 static struct work_struct work_tmp;
+static bool dbt_charger_mitigate_enabe;
+struct notifier_block	chg_nb;
+struct work_struct	charger_update_work;
 extern void fc8350_isr(struct work_struct *work);
 static irqreturn_t isdbt_threaded_irq(int irq, void *dev_id)
 {
@@ -323,6 +328,97 @@ int isdbt_release(struct inode *inode, struct file *filp)
 	return 0;
 }
 
+#define CHG_CURRENT_LIMIT_VAL 800000
+#define CHG_CURRENT_DEFAULT_VAL -22
+static void chg_update_work(struct work_struct *work)
+{
+	int ret;
+	int ctm_current;
+	union power_supply_propval pval = {0, };
+	struct power_supply *usb_psy = power_supply_get_by_name("usb");
+
+	if (!usb_psy) {
+		pr_err("Couldn't get usb psy\n");
+		return;
+	}
+
+	ret = power_supply_get_property(usb_psy,
+			POWER_SUPPLY_PROP_PRESENT, &pval);
+	if (ret < 0) {
+		pr_err("Couldn't get usb presentret=%d\n", ret);
+		return;
+	}
+	if (!pval.intval) {
+		pr_info("usb not present\n");
+		return;
+	}
+
+	ret = power_supply_get_property(usb_psy,
+			POWER_SUPPLY_PROP_TYPEC_MODE, &pval);
+	if (ret < 0) {
+		pr_err("Couldn't get typeC mode=%d\n", ret);
+		return;
+	}
+	if (pval.intval == POWER_SUPPLY_TYPEC_NONE) {
+		pr_info("type c is none\n");
+		return;
+	}
+
+	ret = power_supply_get_property(usb_psy,
+			POWER_SUPPLY_PROP_CTM_CURRENT_MAX, &pval);
+	if (ret < 0) {
+		pr_err("Couldn't get ctm current maxt=%d\n", ret);
+		return;
+	}
+	ctm_current = pval.intval;
+
+	if (driver_mode == ISDBT_POWERON
+			&& ctm_current != CHG_CURRENT_LIMIT_VAL) {
+		pr_info("start limit crrent,orig = %d\n", ctm_current);
+		pval.intval = CHG_CURRENT_LIMIT_VAL;
+		ret = power_supply_set_property(usb_psy,
+				POWER_SUPPLY_PROP_CTM_CURRENT_MAX, &pval);
+		if (ret < 0)
+			pr_err("Couldn't limit CTM_CURRENT_MAX ret=%d\n", ret);
+	} else if (driver_mode != ISDBT_POWERON
+		&& ctm_current != CHG_CURRENT_DEFAULT_VAL){
+		pr_info("recovry chg current, mode =%d,orig = %d\n",
+			driver_mode, ctm_current);
+		pval.intval = CHG_CURRENT_DEFAULT_VAL;
+		ret = power_supply_set_property(usb_psy,
+			POWER_SUPPLY_PROP_CTM_CURRENT_MAX, &pval);
+		if (ret < 0)
+			pr_err("Couldn't recovery chg current ret=%d\n", ret);
+	}
+}
+
+static int dbt_notifier_call(struct notifier_block *nb,
+		unsigned long ev, void *v)
+{
+	struct power_supply *psy = v;
+
+	if (!strcmp(psy->desc->name, "usb")) {
+		if (ev == PSY_EVENT_PROP_CHANGED)
+			schedule_work(&charger_update_work);
+	}
+
+	return NOTIFY_OK;
+}
+
+static int dbt_register_notifier(void)
+{
+	int rc;
+
+	chg_nb.notifier_call = dbt_notifier_call;
+	rc = power_supply_reg_notifier(&chg_nb);
+	if (rc < 0) {
+		pr_err("Couldn't register psy notifier rc = %d\n", rc);
+		return rc;
+	}
+
+	return 0;
+}
+
 long isdbt_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	s32 res = BBM_NOK;
@@ -553,12 +649,16 @@ long isdbt_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 	case IOCTL_ISDBT_POWER_ON:
 		isdbt_hw_init();
+		if (dbt_charger_mitigate_enabe)
+			schedule_work(&charger_update_work);
 #ifdef FC8350_DEBUG
 		print_log(hInit, "[FC8350] IOCTL_ISDBT_POWER_ON\n");
 #endif
 		break;
 	case IOCTL_ISDBT_POWER_OFF:
 		isdbt_hw_deinit();
+		if (dbt_charger_mitigate_enabe)
+			schedule_work(&charger_update_work);
 #ifdef FC8350_DEBUG
 		print_log(hInit, "[FC8350] IOCTL_ISDBT_POWER_OFF\n");
 #endif
@@ -663,6 +763,12 @@ static int fc8350_dt_init(void)
 	bbm_bandwidth = DEFAULT_BBM_BAND_WIDTH;
 	bbm_bandwidth_dvb = DEFAULT_BBM_BAND_WIDTH_DVB;
 	bbm_tsif_clk = DEFAULT_BBM_TSIF_CLK;
+
+	if (of_property_read_bool(np, "dbt-charger-mitigate-enable"))
+		dbt_charger_mitigate_enabe = true;
+	else
+		dbt_charger_mitigate_enabe = false;
+
 	return 0;
 }
 #else
@@ -729,6 +835,9 @@ int isdbt_init(void)
 	if (res)
 		print_log(hInit, "isdbt host interface select fail!\n");
 	INIT_LIST_HEAD(&(hInit->hHead));
+	INIT_WORK(&charger_update_work, chg_update_work);
+	if (dbt_charger_mitigate_enabe)
+		dbt_register_notifier();
 	res = isdbt_chip_id();
 	if (res)
 		goto error_out;
@@ -742,6 +851,9 @@ error_out:
 void isdbt_exit(void)
 {
 	print_log(hInit, "isdbt isdbt_exit\n");
+	if (dbt_charger_mitigate_enabe)
+		power_supply_unreg_notifier(&chg_nb);
+	cancel_work_sync(&charger_update_work);
 	isdbt_hw_deinit();
 #ifndef BBM_I2C_TSIF
 	free_irq(GPIO_ISDBT_IRQ, NULL);
