@@ -134,6 +134,9 @@ enum ISDBT_MODE {
 
 extern struct of_device_id fc8350_match_table[];
 extern struct miscdevice fc8350_misc_device;
+extern enum ISDBT_MODE driver_mode;
+extern struct mutex driver_mode_lock;
+
 s32 isdbt_chip_id(void);
 void isdbt_exit(void);
 extern int isdbt_open(struct inode *inode, struct file *filp);

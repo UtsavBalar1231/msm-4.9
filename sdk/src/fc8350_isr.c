@@ -153,39 +153,42 @@ void fc8350_isr(struct work_struct *work)
 #ifdef BBM_AUX_INT
 	u8 aux_int_status = 0;
 #endif
-
+	mutex_lock(&driver_mode_lock);
+         if (driver_mode == ISDBT_POWERON){
 #ifndef BBM_I2C_TSIF
-	u8 buf_int_status = 0;
-	bbm_byte_read(hInit, DIV_MASTER, BBM_BUF_STATUS_CLEAR,
+		u8 buf_int_status = 0;
+		bbm_byte_read(hInit, DIV_MASTER, BBM_BUF_STATUS_CLEAR,
 					&buf_int_status);
-	if (buf_int_status) {
-		bbm_byte_write(hInit, DIV_MASTER,
-				BBM_BUF_STATUS_CLEAR, buf_int_status);
+		if (buf_int_status) {
+			bbm_byte_write(hInit, DIV_MASTER,
+					BBM_BUF_STATUS_CLEAR, buf_int_status);
 
-		fc8350_data(hInit, DIV_MASTER, buf_int_status);
-	}
+			fc8350_data(hInit, DIV_MASTER, buf_int_status);
+		}
 
-	buf_int_status = 0;
-	bbm_byte_read(hInit, DIV_MASTER, BBM_BUF_STATUS_CLEAR,
-					&buf_int_status);
-	if (buf_int_status) {
-		bbm_byte_write(hInit, DIV_MASTER,
-				BBM_BUF_STATUS_CLEAR, buf_int_status);
+		buf_int_status = 0;
+		bbm_byte_read(hInit, DIV_MASTER, BBM_BUF_STATUS_CLEAR,
+						&buf_int_status);
+		if (buf_int_status) {
+			bbm_byte_write(hInit, DIV_MASTER,
+					BBM_BUF_STATUS_CLEAR, buf_int_status);
 
-		fc8350_data(hInit, DIV_MASTER, buf_int_status);
-	}
+			fc8350_data(hInit, DIV_MASTER, buf_int_status);
+		}
 #endif
 
 #ifdef BBM_AUX_INT
-	bbm_byte_read(hInit, DIV_MASTER, BBM_AUX_STATUS_CLEAR,
+		bbm_byte_read(hInit, DIV_MASTER, BBM_AUX_STATUS_CLEAR,
 					&aux_int_status);
 
-	if (aux_int_status) {
-		bbm_byte_write(hInit, DIV_MASTER,
-				BBM_AUX_STATUS_CLEAR, aux_int_status);
+		if (aux_int_status) {
+			bbm_byte_write(hInit, DIV_MASTER,
+					BBM_AUX_STATUS_CLEAR, aux_int_status);
 
 		fc8350_aux_int(hInit, DIV_MASTER, aux_int_status);
-	}
+		}
 #endif
+	}
+	mutex_unlock(&driver_mode_lock);
 }
 

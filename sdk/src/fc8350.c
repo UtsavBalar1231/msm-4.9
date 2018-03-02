@@ -73,7 +73,7 @@ static int reset_gpio;
 #define FC8350_CHIP_ID_REG 0x26
 
 static DEFINE_MUTEX(ringbuffer_lock);
-static DEFINE_MUTEX(driver_mode_lock);
+DEFINE_MUTEX(driver_mode_lock);
 static DECLARE_WAIT_QUEUE_HEAD(isdbt_isr_wait);
 
 struct ISDBT_OPEN_INFO_T hOpen_Val;
@@ -96,14 +96,14 @@ static irqreturn_t isdbt_threaded_irq(int irq, void *dev_id)
 	//struct ISDBT_INIT_INFO_T *hInit = (struct ISDBT_INIT_INFO_T *)dev_id;
 
 	//printk("[%s][%d]\n",__func__,__LINE__);
-	//mutex_lock(&driver_mode_lock);
+	mutex_lock(&driver_mode_lock);
 	isdbt_isr_sig = 1;
 	if (driver_mode == ISDBT_POWERON){
 		//bbm_com_isr(hInit);
 		schedule_work(&work_tmp);
 	}
 	isdbt_isr_sig = 0;
-	//mutex_unlock(&driver_mode_lock);
+	mutex_unlock(&driver_mode_lock);
 
 	return IRQ_HANDLED;
 }
@@ -335,8 +335,9 @@ static void chg_update_work(struct work_struct *work)
 	int ret;
 	int ctm_current;
 	union power_supply_propval pval = {0, };
-	struct power_supply *usb_psy = power_supply_get_by_name("usb");
+	struct power_supply *usb_psy;
 
+	usb_psy = power_supply_get_by_name("usb");
 	if (!usb_psy) {
 		pr_err("Couldn't get usb psy\n");
 		return;
@@ -372,16 +373,17 @@ static void chg_update_work(struct work_struct *work)
 	}
 	ctm_current = pval.intval;
 
+	mutex_lock(&driver_mode_lock);
 	if (driver_mode == ISDBT_POWERON
-			&& ctm_current != CHG_CURRENT_LIMIT_VAL) {
+			&& (ctm_current > CHG_CURRENT_LIMIT_VAL
+			|| ctm_current < 0)) {
 		pr_info("start limit crrent,orig = %d\n", ctm_current);
 		pval.intval = CHG_CURRENT_LIMIT_VAL;
 		ret = power_supply_set_property(usb_psy,
 				POWER_SUPPLY_PROP_CTM_CURRENT_MAX, &pval);
 		if (ret < 0)
 			pr_err("Couldn't limit CTM_CURRENT_MAX ret=%d\n", ret);
-	} else if (driver_mode != ISDBT_POWERON
-		&& ctm_current != CHG_CURRENT_DEFAULT_VAL){
+	} else if (driver_mode != ISDBT_POWERON) {
 		pr_info("recovry chg current, mode =%d,orig = %d\n",
 			driver_mode, ctm_current);
 		pval.intval = CHG_CURRENT_DEFAULT_VAL;
@@ -390,6 +392,7 @@ static void chg_update_work(struct work_struct *work)
 		if (ret < 0)
 			pr_err("Couldn't recovery chg current ret=%d\n", ret);
 	}
+	mutex_unlock(&driver_mode_lock);
 }
 
 static int dbt_notifier_call(struct notifier_block *nb,
