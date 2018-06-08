@@ -10,5 +10,6 @@ include $(CLEAR_VARS)
 LOCAL_MODULE              := isdbt.ko
 LOCAL_MODULE_TAGS         := optional
 LOCAL_MODULE_DEBUG_ENABLE := false
+LOCAL_MODULE_PATH := $(KERNEL_MODULES_OUT)
 include $(DLKM_DIR)/AndroidKernelModule.mk
 ###########################################################
