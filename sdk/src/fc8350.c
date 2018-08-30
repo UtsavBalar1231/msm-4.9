@@ -63,6 +63,7 @@ struct ISDBT_INIT_INFO_T *hInit;
 #define GPIO_ISDBT_RST EXYNOS4_GPL2(6)
 #else
 static int irq_gpio;
+static int irq_gpio_num;
 static int enable_gpio;
 static int reset_gpio;
 #define GPIO_ISDBT_IRQ		irq_gpio
@@ -211,7 +212,7 @@ int isdbt_hw_setting(HANDLE hDevice)
 
 #ifndef BBM_I2C_TSIF
 request_isdbt_irq:
-	gpio_free(GPIO_ISDBT_IRQ);
+	gpio_free(irq_gpio_num);
 #endif
 #if 0
 gpio_isdbt_rst:
@@ -757,6 +758,7 @@ static int fc8350_dt_init(void)
 		print_log(hInit, "isdbt error getting irq_gpio\n");
 		return -EINVAL;
 	}
+	irq_gpio_num = irq_gpio;
 
 	bbm_xtal_freq = DEFAULT_BBM_XTAL_FREQ;
 	rc = of_property_read_u32(np, "bbm-xtal-freq", &bbm_xtal_freq);
@@ -859,8 +861,8 @@ void isdbt_exit(void)
 	cancel_work_sync(&charger_update_work);
 	isdbt_hw_deinit();
 #ifndef BBM_I2C_TSIF
-	free_irq(GPIO_ISDBT_IRQ, NULL);
-	gpio_free(GPIO_ISDBT_IRQ);
+	free_irq(GPIO_ISDBT_IRQ, hInit);
+	gpio_free(irq_gpio_num);
 #endif
 	gpio_free(GPIO_ISDBT_RST);
 	gpio_free(GPIO_ISDBT_PWR_EN);
