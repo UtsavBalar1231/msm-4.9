@@ -62,10 +62,12 @@ struct ISDBT_INIT_INFO_T *hInit;
 #define GPIO_ISDBT_PWR_EN EXYNOS4_GPK1(2)
 #define GPIO_ISDBT_RST EXYNOS4_GPL2(6)
 #else
+static int ldo_gpio;
 static int irq_gpio;
 static int irq_gpio_num;
 static int enable_gpio;
 static int reset_gpio;
+#define GPIO_ISDBT_LDO		ldo_gpio
 #define GPIO_ISDBT_IRQ		irq_gpio
 #define GPIO_ISDBT_PWR_EN	enable_gpio
 #define GPIO_ISDBT_RST		reset_gpio
@@ -161,6 +163,13 @@ int isdbt_hw_setting(HANDLE hDevice)
 
 	print_log(0, "isdbt_hw_setting\n");
 
+	err = gpio_request(GPIO_ISDBT_LDO, "isdbt_ldo");
+	if (err) {
+		print_log(0, "isdbt_hw_setting: Couldn't request isdbt_ldo\n");
+		goto gpio_isdbt_ldo;
+	}
+	gpio_direction_output(GPIO_ISDBT_LDO, 0);
+
 	err = gpio_request(GPIO_ISDBT_PWR_EN, "isdbt_en");
 	if (err) {
 		print_log(0, "isdbt_hw_setting: Couldn't request isdbt_en\n");
@@ -220,6 +229,8 @@ gpio_isdbt_rst:
 
 #endif
 gpio_isdbt_en:
+	gpio_free(GPIO_ISDBT_LDO);
+gpio_isdbt_ldo:
 	return err;
 }
 
@@ -228,6 +239,7 @@ void isdbt_hw_init(void)
 {
 	mutex_lock(&driver_mode_lock);
 	print_log(0, "isdbt_hw_init\n");
+	gpio_set_value(GPIO_ISDBT_LDO, 1);
 	gpio_set_value(GPIO_ISDBT_RST, 0);
 	gpio_set_value(GPIO_ISDBT_PWR_EN, 1);
 	mdelay(5);
@@ -247,6 +259,7 @@ void isdbt_hw_deinit(void)
 	print_log(0, "isdbt_hw_deinit\n");
 	gpio_set_value(GPIO_ISDBT_RST, 0);
 	gpio_set_value(GPIO_ISDBT_PWR_EN, 0);
+	gpio_set_value(GPIO_ISDBT_LDO, 0);
 	driver_mode = ISDBT_POWEROFF;
 	mutex_unlock(&driver_mode_lock);
 }
@@ -696,7 +709,8 @@ long isdbt_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		err = copy_from_user((void *)&info, (void *)arg, size);
 		memcpy((void *)&hOpen->driver_config, (void *)&info.buff[0]
 			, sizeof(struct drv_cfg));
-		bbm_xtal_freq		= hOpen->driver_config.v_xtal_freq;
+		/*bbm_xtal_freq		= hOpen->driver_config.v_xtal_freq; */ /*fccon always send 32000*/
+		bbm_xtal_freq		= BBM_XTAL_FREQ;/*use device tree xtal config*/
 		bbm_bandwidth		= hOpen->driver_config.v_band_width;
 		bbm_bandwidth_dvb	= hOpen->driver_config.v_band_width_dvb;
 		bbm_tsif_clk		= hOpen->driver_config.v_tsif_clk;
@@ -740,6 +754,12 @@ static int fc8350_dt_init(void)
 		fc8350_match_table[0].compatible);
 	if (!np)
 		return -ENODEV;
+
+	ldo_gpio = of_get_named_gpio(np, "ldo-gpio", 0);
+	if (!gpio_is_valid(ldo_gpio)) {
+		print_log(hInit, "isdbt error getting ldo_gpio\n");
+		return -EINVAL;
+	}
 
 	enable_gpio = of_get_named_gpio(np, "enable-gpio", 0);
 	if (!gpio_is_valid(enable_gpio)) {
@@ -866,6 +886,7 @@ void isdbt_exit(void)
 #endif
 	gpio_free(GPIO_ISDBT_RST);
 	gpio_free(GPIO_ISDBT_PWR_EN);
+	gpio_free(GPIO_ISDBT_LDO);
 
 #ifndef BBM_I2C_TSIF
 	bbm_com_ts_callback_deregister();

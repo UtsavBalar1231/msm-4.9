@@ -99,6 +99,8 @@ static int fc8350_spi_probe(struct spi_device *spi)
 {
 	s32 ret = 0;
 
+	struct pinctrl *fc8350_pinctrl;
+	struct pinctrl_state *pinctrl_state_default;
 	print_log(0, "fc8350_spi_probe\n");
 
 	spi->max_speed_hz = 50000000;
@@ -111,6 +113,17 @@ static int fc8350_spi_probe(struct spi_device *spi)
 		return ret;
 
 	fc8350_spi = spi;
+
+	fc8350_pinctrl = devm_pinctrl_get(&fc8350_spi->dev);
+	pinctrl_state_default= pinctrl_lookup_state(fc8350_pinctrl, "default");
+	if (IS_ERR(pinctrl_state_default)) {
+		print_log(0, "cannot find pinctrl state default\n");
+	} else {
+		ret = pinctrl_select_state(fc8350_pinctrl, pinctrl_state_default);
+		if (ret < 0)
+			print_log(0, "%s: Failed to select default pinstate %d\n",
+							__func__, ret);
+	}
 
 	return ret;
 }
