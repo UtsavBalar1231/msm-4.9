@@ -239,9 +239,8 @@ void isdbt_hw_init(void)
 {
 	mutex_lock(&driver_mode_lock);
 	print_log(0, "isdbt_hw_init\n");
-	gpio_set_value(GPIO_ISDBT_RST, 0);
 	gpio_set_value(GPIO_ISDBT_LDO, 1);
-	mdelay(20);
+	gpio_set_value(GPIO_ISDBT_RST, 0);
 	gpio_set_value(GPIO_ISDBT_PWR_EN, 1);
 	mdelay(5);
 	gpio_set_value(GPIO_ISDBT_RST, 1);
@@ -258,10 +257,8 @@ void isdbt_hw_deinit(void)
 {
 	mutex_lock(&driver_mode_lock);
 	print_log(0, "isdbt_hw_deinit\n");
-	gpio_set_value(GPIO_ISDBT_PWR_EN, 0);
-	mdelay(1);
 	gpio_set_value(GPIO_ISDBT_RST, 0);
-	mdelay(1);
+	gpio_set_value(GPIO_ISDBT_PWR_EN, 0);
 	gpio_set_value(GPIO_ISDBT_LDO, 0);
 	driver_mode = ISDBT_POWEROFF;
 	mutex_unlock(&driver_mode_lock);
