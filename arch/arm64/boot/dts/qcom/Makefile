@@ -20,6 +20,16 @@ dtb-$(CONFIG_CEDRIC_DTB) += \
 	msm8937-cedric-p5.dtb
 endif
 
+ifeq ($(CONFIG_POTTER_DTB),y)
+dtb-$(CONFIG_ARCH_MSM8953) += msm8953-potter-p0a.dtb \
+	msm8953-potter-p1a.dtb \
+	msm8953-potter-p1b.dtb \
+	msm8953-potter-p2a.dtb \
+	msm8953-potter-p2a2.dtb \
+	msm8953-potter-p2b.dtb \
+	msm8953-potter-p3a.dtb
+endif
+
 ifneq ($(CONFIG_MMI_DTB),y)
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
 	dtbo-$(CONFIG_ARCH_SDM845) += \
