@@ -38,7 +38,7 @@
 		/delete-property/ spi3;
 	};
 
-	reserved-memory {
+	reserved_memory {
 		ramoops_mem: ramoops_mem_region {
 			no-map;
 			reg = <0x0 0xef000000 0x0 0x80000>;
