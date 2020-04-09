@@ -1288,7 +1288,7 @@ static int qpnp_flash_led_prepare_v1(struct led_trigger *trig, int options,
 static int qpnp_check_fault(struct qpnp_flash_led *led)
 {
 	int rc;
-	u8 val;
+	uint val;
 
 	if (!led->pdata->self_check_en)
 		return false;
@@ -1296,18 +1296,17 @@ static int qpnp_check_fault(struct qpnp_flash_led *led)
 	/*
 	 * Checking LED fault status detects hardware open fault.
 	 */
-	rc = spmi_ext_register_readl(led->spmi_dev->ctrl,
-		led->spmi_dev->sid,
-		FLASH_LED_FAULT_STATUS(led->base), &val, 1);
+	rc = regmap_read(led->regmap,
+		FLASH_LED_FAULT_STATUS(led->base), &val);
 	if (rc) {
-		dev_err(&led->spmi_dev->dev,
+		dev_err(&led->pdev->dev,
 			"Failed to read out fault status register\n");
 		return rc;
 	}
 
 	if (val) {
-		dev_info(&led->spmi_dev->dev, "%s fault register %#x\n", __func__, val);
-		dev_info(&led->spmi_dev->dev, ">> %s%s%s%s%s%s\n",
+		dev_info(&led->pdev->dev, "%s fault register %#x\n", __func__, val);
+		dev_info(&led->pdev->dev, ">> %s%s%s%s%s%s\n",
 			val & FLASH_VREG_OK_FAULT ? "FLASH_VREG_OK_FAULT ":"",
 			val & FLASH_THERMAL_DERATE ? "FLASH_THERMAL_DERATE ":"",
 			val & FLASH_LED2_OPEN_FAULT ? "FLASH_LED2_OPEN_FAULT ":"",
@@ -1323,38 +1322,37 @@ static int qpnp_check_fault(struct qpnp_flash_led *led)
 		/* If a fault was detected;
 		   reset fault detection and check again to make
 		   sure fault is still active */
-		rc = qpnp_led_masked_write(led->spmi_dev,
+		rc = qpnp_led_masked_write(led->regmap,
 					FLASH_FAULT_DETECT(led->base),
 					FLASH_FAULT_DETECT_MASK,
 					FLASH_LED_DISABLE);
 		if (rc) {
-			dev_err(&led->spmi_dev->dev,
+			dev_err(&led->pdev->dev,
 				"Fault detect reg write failed\n");
 				return rc;
 		}
 		udelay(2000);
-		rc = qpnp_led_masked_write(led->spmi_dev,
+		rc = qpnp_led_masked_write(led->regmap,
 					FLASH_FAULT_DETECT(led->base),
 					FLASH_FAULT_DETECT_MASK,
-					FLASH_MODULE_ENABLE);
+                                        FLASH_MODULE_ENABLE);
 		if (rc) {
-			dev_err(&led->spmi_dev->dev,
+			dev_err(&led->pdev->dev,
 				"Fault detect reg write failed\n");
 				return rc;
 		}
 		udelay(2000);
-		rc = spmi_ext_register_readl(led->spmi_dev->ctrl,
-			led->spmi_dev->sid,
-			FLASH_LED_FAULT_STATUS(led->base), &val, 1);
+		rc = regmap_read(led->regmap,
+			FLASH_LED_FAULT_STATUS(led->base), &val);
 		if (rc) {
-			dev_err(&led->spmi_dev->dev,
+			dev_err(&led->pdev->dev,
 				"Failed to read out fault status register\n");
 			return rc;
 		}
 
 		if (val) {
-			dev_info(&led->spmi_dev->dev, "%s after retry fault register %#x\n", __func__, val);
-			dev_info(&led->spmi_dev->dev, ">> %s%s%s%s%s%s\n",
+			dev_info(&led->pdev->dev, "%s after retry fault register %#x\n", __func__, val);
+			dev_info(&led->pdev->dev, ">> %s%s%s%s%s%s\n",
 				val & FLASH_VREG_OK_FAULT ? "FLASH_VREG_OK_FAULT ":"",
 				val & FLASH_THERMAL_DERATE ? "FLASH_THERMAL_DERATE ":"",
 				val & FLASH_LED2_OPEN_FAULT ? "FLASH_LED2_OPEN_FAULT ":"",
@@ -1881,7 +1879,7 @@ static void qpnp_flash_led_work(struct work_struct *work)
 
 turn_off:
 	if (qpnp_check_fault(led))
-		dev_err(&led->spmi_dev->dev, "Open fault detected\n");
+		dev_err(&led->pdev->dev, "Open fault detected\n");
 
 	rc = qpnp_led_masked_write(led,
 			FLASH_LED_STROBE_CTRL(led->base),
@@ -1954,7 +1952,7 @@ static void qpnp_flash_led_brightness_set(struct led_classdev *led_cdev,
 		return;
 	}
 
-	dev_dbg(&flash_node->spmi_dev->dev, "set %s to %dmA\n",
+	dev_dbg(&flash_node->pdev->dev, "set %s to %dmA\n",
 		led_cdev->name, value);
 
 	if (value > flash_node->cdev.max_brightness)
@@ -2807,7 +2805,7 @@ static int qpnp_flash_led_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static const struct of_device_id spmi_match_table[] = {
+static const struct of_device_id platform_match_table[] = {
 	{ .compatible = "qcom,qpnp-flash-led",},
 	{ },
 };
@@ -2815,7 +2813,7 @@ static const struct of_device_id spmi_match_table[] = {
 static struct platform_driver qpnp_flash_led_driver = {
 	.driver		= {
 		.name		= "qcom,qpnp-flash-led",
-		.of_match_table	= spmi_match_table,
+		.of_match_table	= platform_match_table,
 	},
 	.probe		= qpnp_flash_led_probe,
 	.remove		= qpnp_flash_led_remove,
