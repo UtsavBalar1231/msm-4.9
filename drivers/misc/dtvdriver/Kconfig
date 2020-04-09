@@ -1,0 +1,5 @@
+menu "Motorola DTV Driver"
+
+source "drivers/misc/dtvdriver/src/Kconfig"
+
+endmenu

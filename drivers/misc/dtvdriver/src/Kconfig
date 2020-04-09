@@ -1,0 +1,9 @@
+config MOTO_DTV
+       bool "Motorola vendor-fci-dtvdriver"
+       default y
+       help
+	This is ISDB-T baseband module that supports
+	standard digital television (DTV) and
+	digital radio.
+
+	Say N here unless you know what you're doing.
