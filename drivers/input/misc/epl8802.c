@@ -30,7 +30,6 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <asm/setup.h>
-#include <linux/wakelock.h>
 #include <linux/jiffies.h>
 #include <linux/epl8802.h>
 #include <linux/regulator/consumer.h>
@@ -187,7 +186,7 @@ struct epl_sensor_priv {
 	u32 dynk_thd_high;
 	u32 dynk_thd_recal;
 	int ps_pre_state;
-	struct wake_lock ps_lock;
+	struct wakeup_source ps_lock;
 };
 
 static struct mutex sensor_mutex;
@@ -1024,7 +1023,6 @@ void epl_sensor_enable_ps(struct epl_sensor_priv *epld, int enable)
 		epld->enable_pflag = enable;
 		epld->ps_pre_state = PS_UNKNOWN;
 		if (enable) {
-			/*wake_lock(&ps_lock);*/
 #if PS_FIRST_REPORT
 			epld->ps_frist_flag = true;
 			set_psensor_intr_threshold(epld,
@@ -1035,7 +1033,6 @@ void epl_sensor_enable_ps(struct epl_sensor_priv *epld, int enable)
 			epld->ps_dyn_flag = true;
 #endif
 		} else {
-			/*wake_unlock(&ps_lock);*/
 			/*report a invalid value when disable sensor*/
 			input_report_abs(epld->ps_input_dev, ABS_DISTANCE, -1);
 			input_sync(epld->als_input_dev);
@@ -1543,7 +1540,7 @@ static void epl_sensor_eint_work(struct work_struct *work)
 	epl_sensor_read_als(epld->client);
 	if (epld->epl_sensor.ps.interrupt_flag == EPL_INT_TRIGGER) {
 		if (enable_ps) {
-			wake_lock_timeout(&epld->ps_lock, 2 * HZ);
+			__pm_wakeup_event(&epld->ps_lock, 2 * HZ);
 			epl_sensor_report_ps_status(epld);
 		}
 		/*
@@ -3088,7 +3085,7 @@ static int epl_sensor_probe(struct i2c_client *client,
 			LOG_ERR("setup error!\n");
 	}
 
-	wake_lock_init(&epld->ps_lock, WAKE_LOCK_SUSPEND, "ps wakelock");
+	wakeup_source_init(&epld->ps_lock, "ps wakelock");
 #if ATTR_RANGE_PATH
 	if (epld->num_of_rp == 1) {
 		epld->kernel_kobj_dev =
